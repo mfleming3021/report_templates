@@ -1,0 +1,977 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Hybrid_Performance_Network_Style_1" language="groovy" pageWidth="1240" pageHeight="1754" whenNoDataType="AllSectionsNoDetail" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="baa1a903-5b6e-40f0-89c8-2eb0f11590aa">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="2"/>
+	<style name="AlternateDualColumns">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5"/>
+			<leftPen lineWidth="0.5"/>
+			<bottomPen lineWidth="0.5"/>
+			<rightPen lineWidth="0.5"/>
+		</box>
+	</style>
+	<style name="DualColumns" mode="Opaque" backcolor="#B0C4DE">
+		<box>
+			<topPen lineWidth="0.5"/>
+			<leftPen lineWidth="0.5"/>
+			<bottomPen lineWidth="0.5"/>
+			<rightPen lineWidth="0.5"/>
+		</box>
+	</style>
+	<subDataset name="Hybrids" whenResourceMissingType="Key" uuid="5f1a22ab-043c-4a85-baca-7ac6037439e7">
+		<parameter name="TABLE_ENTERPRISE_ID" class="java.lang.Integer" isForPrompting="false">
+			<defaultValueExpression><![CDATA[26]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TABLE_ACRES_FILTER" class="java.lang.Integer" isForPrompting="false">
+			<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TABLE_CROP_TYPE" class="java.lang.String" isForPrompting="false">
+			<defaultValueExpression><![CDATA["Corn"]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TABLE_YEAR" class="java.lang.String" isForPrompting="false">
+			<defaultValueExpression><![CDATA[new SimpleDateFormat("yyyy").format(new Date())]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TABLE_NETWORK" class="java.lang.Integer">
+			<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+		</parameter>
+		<queryString>
+			<![CDATA[SELECT Your.yrank, wNetwork.wrank, Your.hybrid, Your.yAcres, Network.nAcres, Your.yYieldAvg, Your.yYieldSum, Network.nYieldAvg, Network.nYieldSum,
+ Your.yMoistPercAvg, Your.yMoistPercSum, Network.nMoistPercAvg, Network.nMoistPercSum
+FROM
+(
+SELECT hybrid, yAcres, yYieldAvg, yYieldSum, yMoistPercAVG, yMoistPercSum, CASE
+	WHEN @prev_value = a.hybrid_id THEN @curRank
+	WHEN @prev_value := a.hybrid_id THEN @curRank := @curRank + 1
+END AS yrank
+FROM
+(SELECT m.hybrid, y.hybrid_id, SUM(acres) AS yAcres,
+SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) AS yYieldAvg,
+SUM(acres * case when yield_avg > 300 then 300 else yield_avg END) AS yYieldSum,
+(SUM(((CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)) * (moist_perc/100))/SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END))*100 AS yMoistPercAVG,
+SUM( (acres * case when yield_avg > 300 then 300 else yield_avg END) * moist_perc) AS yMoistPercSum
+FROM field_yield_stats y
+INNER JOIN fields f ON f.id = y.field_id
+INNER JOIN enterprises e ON e.id = f.enterprise_id
+INNER JOIN master_hybrid_references m ON m.id = y.hybrid_id
+WHERE e.id = $P{TABLE_ENTERPRISE_ID}
+AND m.crop = $P{TABLE_CROP_TYPE}
+AND y.year = $P{TABLE_YEAR}
+GROUP BY m.hybrid
+HAVING SUM(acres) > $P{TABLE_ACRES_FILTER}
+ORDER BY SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) DESC, SUM(acres) DESC)a,
+(SELECT @curRank := 0)b, (SELECT @prev_value := NULL)c) Your
+LEFT OUTER JOIN
+(SELECT hybrid, CASE
+	WHEN @prev_value2 = a.hybrid_id THEN @curRank2
+	WHEN @prev_value2 := a.hybrid_id THEN @curRank2 := @curRank2 + 1
+END AS wrank
+FROM
+(SELECT m.hybrid, y.hybrid_id
+FROM fields f
+INNER JOIN field_yield_stats y ON y.field_id = f.id
+INNER JOIN enterprises e ON e.id = f.enterprise_id
+INNER JOIN master_hybrid_references m ON m.id = y.hybrid_id
+WHERE m.crop = $P{TABLE_CROP_TYPE}
+AND y.year = $P{TABLE_YEAR}
+AND f.fips_code IN ($P!{TABLE_NETWORK})
+AND e.is_test = 0
+GROUP BY m.hybrid
+ORDER BY SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) DESC, SUM(acres) DESC)a,
+(SELECT @curRank2 := 0)b, (SELECT @prev_value2 := NULL)c) wNetwork
+ON Your.hybrid = wNetwork.hybrid
+LEFT OUTER JOIN
+(
+SELECT m.hybrid, SUM(acres) AS nAcres,
+SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) AS nYieldAvg,
+SUM(acres * case when yield_avg > 300 then 300 else yield_avg END) AS nYieldSum,
+(SUM((CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END) * (moist_perc/100))/SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END))*100 AS nMoistPercAvg,
+SUM((acres * case when yield_avg > 300 then 300 else yield_avg END) * moist_perc) AS nMoistPercSum
+FROM field_yield_stats y
+INNER JOIN fields f ON f.id = y.field_id
+INNER JOIN enterprises e ON e.id = f.enterprise_id
+INNER JOIN master_hybrid_references m ON m.id = y.hybrid_id
+WHERE y.year = $P{TABLE_YEAR}
+AND m.crop = $P{TABLE_CROP_TYPE}
+AND f.fips_code IN ($P!{TABLE_NETWORK})
+AND e.is_test = 0
+GROUP BY m.hybrid
+) Network
+ON wNetwork.hybrid = Network.hybrid
+ORDER BY yrank ASC;]]>
+		</queryString>
+		<field name="yrank" class="java.lang.Integer"/>
+		<field name="wrank" class="java.lang.Integer"/>
+		<field name="hybrid" class="java.lang.String">
+			<fieldDescription><![CDATA[]]></fieldDescription>
+		</field>
+		<field name="yAcres" class="java.math.BigDecimal"/>
+		<field name="nAcres" class="java.math.BigDecimal"/>
+		<field name="yYieldAvg" class="java.math.BigDecimal"/>
+		<field name="yYieldSum" class="java.math.BigDecimal"/>
+		<field name="nYieldAvg" class="java.math.BigDecimal"/>
+		<field name="nYieldSum" class="java.math.BigDecimal"/>
+		<field name="yMoistPercAvg" class="java.math.BigDecimal"/>
+		<field name="yMoistPercSum" class="java.math.BigDecimal"/>
+		<field name="nMoistPercAvg" class="java.math.BigDecimal"/>
+		<field name="nMoistPercSum" class="java.math.BigDecimal"/>
+		<variable name="yTotAcres" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{yAcres}]]></variableExpression>
+		</variable>
+		<variable name="nTotAcres" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[Math.round($F{nAcres}*100)/100]]></variableExpression>
+		</variable>
+		<variable name="yBuASum" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{yYieldSum}]]></variableExpression>
+		</variable>
+		<variable name="nBuASum" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{nYieldSum}]]></variableExpression>
+		</variable>
+		<variable name="yMoisPercSum" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{yMoistPercSum}]]></variableExpression>
+		</variable>
+		<variable name="nMoisPercSum" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{nMoistPercSum}]]></variableExpression>
+		</variable>
+		<variable name="yBuAAvg" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{yBuASum}/$V{yTotAcres}]]></variableExpression>
+		</variable>
+		<variable name="nBuAAvg" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{nBuASum}/$V{nTotAcres}]]></variableExpression>
+		</variable>
+		<variable name="yMoistPercAvg" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{yMoisPercSum}/$V{yBuASum}]]></variableExpression>
+		</variable>
+		<variable name="nMoistPercAvg" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{nMoisPercSum}/$V{nBuASum}]]></variableExpression>
+		</variable>
+	</subDataset>
+	<subDataset name="Top Hybrids" uuid="c16fba03-bb54-4861-847d-ae250afb6e66">
+		<parameter name="TOP_ENTERPRISE_ID" class="java.lang.Integer" isForPrompting="false">
+			<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TOP_ACRES_FILTER" class="java.lang.Integer" isForPrompting="false">
+			<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TOP_CROP_TYPE" class="java.lang.String" isForPrompting="false">
+			<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TOP_CROP_YEAR" class="java.lang.String" isForPrompting="false">
+			<defaultValueExpression><![CDATA[new SimpleDateFormat("yyyy").format(new Date())]]></defaultValueExpression>
+		</parameter>
+		<parameter name="TOP_NETWORK" class="java.lang.String">
+			<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+		</parameter>
+		<queryString>
+			<![CDATA[SELECT Network.nRank, Your.yrank,  Network.hybrid, Network.nAcres, Network.nYieldAvg, Network.nYieldSum, Network.nMoistPerc, Network.nMoistPercSum
+FROM
+(
+SELECT hybrid, nAcres, nYieldAvg, nYieldSum, nMoistPerc, nMoistPercSum, CASE
+	WHEN @prev_value = a.hybrid_id THEN @curRank
+	WHEN @prev_value := a.hybrid_id THEN @curRank := @curRank + 1
+END AS nRank
+FROM
+(SELECT m.hybrid, y.hybrid_id, SUM(acres) AS nAcres,
+SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) AS nYieldAvg,
+SUM(acres * CASE WHEN yield_avg > 300 then 300 else yield_avg END) AS nYieldSum,
+(SUM((CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END) * (moist_perc/100))/SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END))*100 AS nMoistPerc,
+SUM((acres * CASE WHEN yield_avg > 300 then 300 else yield_avg END) * moist_perc) AS nMoistPercSum
+FROM field_yield_stats y
+INNER JOIN fields f ON f.id = y.field_id
+INNER JOIN enterprises e on e.id = f.enterprise_id
+INNER JOIN master_hybrid_references m ON m.id = y.hybrid_id
+WHERE f.fips_code IN ($P!{TOP_NETWORK})
+AND m.crop = $P{TOP_CROP_TYPE}
+AND y.year = $P{TOP_CROP_YEAR}
+AND e.is_test = 0
+GROUP BY m.hybrid
+ORDER BY SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) DESC, SUM(acres) DESC
+LIMIT 10)a, (SELECT @curRank := 0)b, (SELECT @prev_value := NULL)c)Network
+LEFT OUTER JOIN
+(
+SELECT hybrid, yAcres, yYieldAvg, yMoistPerc, CASE
+	WHEN @prev_value2 = a.hybrid_id THEN @curRank2
+	WHEN @prev_value2 := a.hybrid_id THEN @curRank2 := @curRank2 + 1
+END AS yRank
+FROM
+(SELECT m.hybrid, y.hybrid_id, SUM(acres) AS yAcres,
+SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) AS yYieldAvg,
+(SUM((CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END) * (moist_perc/100))/SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END))*100 AS yMoistPerc
+FROM field_yield_stats y
+INNER JOIN fields f ON f.id = y.field_id
+INNER JOIN enterprises e ON e.id = f.enterprise_id
+INNER JOIN master_hybrid_references m ON m.id = y.hybrid_id
+WHERE e.id = $P{TOP_ENTERPRISE_ID}
+AND m.crop = $P{TOP_CROP_TYPE}
+AND y.year = $P{TOP_CROP_YEAR}
+GROUP BY m.hybrid
+ORDER BY SUM(CASE WHEN yield_avg > 300 THEN 300 * acres ELSE yield_avg * acres END)/SUM(acres) DESC, SUM(acres) DESC)a,
+(SELECT @curRank2 := 0)b, (SELECT @prev_value2 := NULL)c) Your
+ON Your.hybrid = Network.hybrid
+ORDER BY nRank ASC]]>
+		</queryString>
+		<field name="nRank" class="java.lang.Integer"/>
+		<field name="yrank" class="java.lang.Integer"/>
+		<field name="hybrid" class="java.lang.String">
+			<fieldDescription><![CDATA[]]></fieldDescription>
+		</field>
+		<field name="nAcres" class="java.math.BigDecimal"/>
+		<field name="nYieldAvg" class="java.math.BigDecimal"/>
+		<field name="nYieldSum" class="java.math.BigDecimal"/>
+		<field name="nMoistPerc" class="java.math.BigDecimal"/>
+		<field name="nMoistPercSum" class="java.math.BigDecimal"/>
+		<variable name="TotAcres" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{nAcres}]]></variableExpression>
+		</variable>
+		<variable name="totBu" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{nYieldSum}]]></variableExpression>
+		</variable>
+		<variable name="totMoistPerc" class="java.lang.Double" calculation="Sum">
+			<variableExpression><![CDATA[$F{nMoistPercSum}]]></variableExpression>
+		</variable>
+		<variable name="AvgBuA" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{totBu}/$V{TotAcres}]]></variableExpression>
+		</variable>
+		<variable name="AvgMoisPerc" class="java.lang.Double">
+			<variableExpression><![CDATA[$V{totMoistPerc}/$V{totBu}]]></variableExpression>
+		</variable>
+	</subDataset>
+	<parameter name="ENTERPRISE_ID" class="java.lang.Integer"/>
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<parameter name="PAGE_NUMBER" class="java.lang.Integer"/>
+	<parameter name="PAGE_COUNT" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="ACRES_FILTER" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[0]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CROP_TYPE" class="java.lang.String">
+		<defaultValueExpression><![CDATA["Corn"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CROP_YEAR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[new SimpleDateFormat("yyyy").format(new Date())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:/WingScan/report_templates"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NETWORK" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT name AS EnterpriseName
+FROM enterprises
+WHERE enterprises.id = $P{ENTERPRISE_ID}]]>
+	</queryString>
+	<field name="EnterpriseName" class="java.lang.String"/>
+	<variable name="HORV" class="java.lang.String" resetType="None">
+		<variableExpression><![CDATA[(($P{CROP_TYPE} == "Corn") ? "Hybrid" : "Variety")]]></variableExpression>
+	</variable>
+	<variable name="PHORV" class="java.lang.String">
+		<variableExpression><![CDATA[(($P{CROP_TYPE} == "Corn") ? "Hybrids" : "Varieties")]]></variableExpression>
+	</variable>
+	<group name="HPAYO">
+		<groupExpression><![CDATA[$P{ENTERPRISE_ID}]]></groupExpression>
+		<groupHeader>
+			<band height="270">
+				<componentElement>
+					<reportElement key="Hybrid Performance" x="72" y="130" width="1059" height="140" uuid="fa3ffd22-92d0-46e9-aaf0-6e9a2b4adbb9"/>
+					<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" whenNoDataType="AllSectionsNoDetail">
+						<datasetRun subDataset="Hybrids" uuid="04f44a3b-7790-40d7-bd51-ff854d570b5e">
+							<datasetParameter name="TABLE_ENTERPRISE_ID">
+								<datasetParameterExpression><![CDATA[$P{ENTERPRISE_ID}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TABLE_ACRES_FILTER">
+								<datasetParameterExpression><![CDATA[$P{ACRES_FILTER}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TABLE_CROP_TYPE">
+								<datasetParameterExpression><![CDATA[$P{CROP_TYPE}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TABLE_YEAR">
+								<datasetParameterExpression><![CDATA[$P{CROP_YEAR}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TABLE_NETWORK">
+								<datasetParameterExpression><![CDATA[$P{NETWORK}]]></datasetParameterExpression>
+							</datasetParameter>
+							<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+						</datasetRun>
+						<jr:columnGroup width="184" uuid="75ea3430-a878-49be-9bce-6437ba03e5e4">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.0"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="184" height="35" backcolor="#FFFFFF" uuid="89899d88-8fe9-4e2e-805b-2a7a971deaba"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="SansSerif" size="20" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Rank]]></text>
+								</staticText>
+							</jr:tableHeader>
+							<jr:column width="89" uuid="e5dd5148-33be-4adb-8066-9c46c55bec7a">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="89" height="35" backcolor="#FFFFFF" uuid="7ad5f726-c737-426b-9624-e5cc6fd59212"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Yours	]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter height="40" rowSpan="1"/>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="89" height="40" uuid="acdff9a7-c495-4b2f-bd2b-5d195c8e2e36"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{yrank}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+							<jr:column width="95" uuid="36cfdb38-e6b7-4a9c-9a99-0ae47c913fee">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="95" height="35" uuid="4fc1b5ec-1982-41eb-8838-209a6e0636b3"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Network]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter height="40" rowSpan="1"/>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField isBlankWhenNull="true">
+										<reportElement mode="Transparent" x="0" y="0" width="95" height="40" uuid="11b20668-d579-4a2a-8b2e-0ef5daf55830"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{wrank}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+						</jr:columnGroup>
+						<jr:column width="195" uuid="253af7ff-df52-491e-ac4b-53936a40539a">
+							<jr:tableHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.0"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+							</jr:tableHeader>
+							<jr:columnHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.0"/>
+								</box>
+								<textField>
+									<reportElement x="0" y="0" width="195" height="35" uuid="6921762e-585e-4055-9d4f-bf2c6dd36405"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<textFieldExpression><![CDATA[($P{TABLE_CROP_TYPE} == "Corn") ? "Hybrid" : "Variety"]]></textFieldExpression>
+								</textField>
+							</jr:columnHeader>
+							<jr:columnFooter style="AlternateDualColumns" height="40" rowSpan="1">
+								<staticText>
+									<reportElement x="0" y="0" width="195" height="40" uuid="5b296f14-e81d-498d-a3f1-c00084381825"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Summary]]></text>
+								</staticText>
+							</jr:columnFooter>
+							<jr:detailCell style="AlternateDualColumns" height="40" rowSpan="1">
+								<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+									<reportElement x="0" y="0" width="195" height="40" uuid="24e5b2cc-1a3f-4aa7-bdf3-e77a5e6bd17c"/>
+									<textElement verticalAlignment="Middle">
+										<font fontName="SansSerif" size="16"/>
+										<paragraph leftIndent="5" rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{hybrid}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:columnGroup width="231" uuid="7bc5d0f6-eed6-4dbe-9a13-d8dbbaca744f">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.0"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="231" height="35" uuid="253a0c30-3e85-47fb-8418-0f21d42eaac3"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="SansSerif" size="20" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[A]]></text>
+								</staticText>
+							</jr:tableHeader>
+							<jr:column width="116" uuid="5de8e482-f781-44a0-9990-dd03c6988385">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="116" height="35" uuid="5a5ef1d6-aeb9-4310-8529-2ad4bae50ca3"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Yours	]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="#,##0" isBlankWhenNull="false">
+										<reportElement x="0" y="0" width="116" height="40" uuid="775c97ce-6f1b-42fb-8fb9-2908178cee47"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{yTotAcres}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="116" height="40" uuid="2ce0b9a9-b39b-42a6-8e7d-05f45c6490d8"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{yAcres}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+							<jr:column width="115" uuid="be212b5f-8846-416c-87d4-f7fb5d1a7558">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="115" height="35" uuid="dfa77f1f-ffb7-4581-a01d-308a5cbed147"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Network]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="#,##0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="115" height="40" uuid="664786bd-e056-4104-85ae-6e373bf25457"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{nTotAcres}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="115" height="40" uuid="ee7e10c9-a70a-473c-8372-d69800f27bd9"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{nAcres}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+						</jr:columnGroup>
+						<jr:columnGroup width="215" uuid="7ae81b54-f936-4d91-a86d-3d010858e418">
+							<jr:tableHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.0"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="215" height="35" uuid="760b7e86-7c70-4cc3-8a90-5df38597b290"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="SansSerif" size="20" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Bu/A]]></text>
+								</staticText>
+							</jr:tableHeader>
+							<jr:column width="108" uuid="e9b40d4f-1401-4f6c-88f3-720dbe8a5a01">
+								<jr:columnHeader style="AlternateDualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="108" height="35" uuid="e10da3fd-d13f-486a-a1e4-6ed38c60494a"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Yours	]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="AlternateDualColumns" height="40" rowSpan="1">
+									<textField pattern="###0.0" isBlankWhenNull="false">
+										<reportElement x="0" y="0" width="108" height="40" uuid="719409dd-0519-400b-a239-d44efbfe381e"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{yBuAAvg}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="AlternateDualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="108" height="40" uuid="c7f2e21c-a4fa-4c94-b5eb-5631c527847e"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{yYieldAvg}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+							<jr:column width="107" uuid="1fc9e86d-50fc-49a8-8f8c-46f34b279a49">
+								<jr:columnHeader style="AlternateDualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="107" height="35" uuid="22311e33-6406-4c20-bac6-c64a86a0a612"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Network]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="AlternateDualColumns" height="40" rowSpan="1">
+									<textField pattern="###0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="107" height="40" uuid="e092e2c5-c626-4ac4-9d40-b7919369e518"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{nBuAAvg}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="AlternateDualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="107" height="40" uuid="377ba951-fe86-4e90-b566-b9ad0157c977"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{nYieldAvg}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+						</jr:columnGroup>
+						<jr:columnGroup width="226" uuid="c4e774b3-d5f4-4d9f-95b8-7c1725f1201f">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.0"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="226" height="35" uuid="9250bfdc-1b8f-4118-b1ce-23549e689a31"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font fontName="SansSerif" size="20" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[% Moisture]]></text>
+								</staticText>
+							</jr:tableHeader>
+							<jr:column width="114" uuid="7d658681-833f-4fb7-80ee-cadac0b601cf">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="114" height="35" uuid="a404dcfe-10ef-4b87-b115-9a0daf8c43c2"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Yours]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="false">
+										<reportElement x="0" y="0" width="114" height="40" uuid="d1b39b97-89c1-456f-8edd-6635cc2a5372"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{yMoistPercAvg}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="114" height="40" uuid="4f6233a8-2d88-4810-9d83-375aa1d12be9"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{yMoistPercAvg}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+							<jr:column width="112" uuid="911f678e-d77c-4a6b-87b6-8be1a2040b14">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="112" height="35" uuid="3d78642a-dbcc-4969-a1ba-398666e9d162"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Network]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="112" height="40" uuid="73cc1f53-df01-4356-99ee-7170a7901a1c"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$V{nMoistPercAvg}]]></textFieldExpression>
+									</textField>
+								</jr:columnFooter>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField pattern="0.0" isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="112" height="40" uuid="825eca78-c667-4672-bbc8-cadbe0abc24f"/>
+										<textElement textAlignment="Right" verticalAlignment="Middle">
+											<font fontName="SansSerif" size="16"/>
+											<paragraph rightIndent="5"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{nMoistPercAvg}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+						</jr:columnGroup>
+					</jr:table>
+				</componentElement>
+				<textField evaluationTime="Report">
+					<reportElement x="72" y="22" width="651" height="35" forecolor="#0099FF" uuid="002de50d-7237-4c5e-bdb5-1ad2db07fc9b"/>
+					<textElement verticalAlignment="Middle">
+						<font size="24" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{HORV} + " Performance across Your Operation"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Report">
+					<reportElement x="72" y="80" width="454" height="30" forecolor="#595959" uuid="c3b121ec-92d0-425f-8bb9-ea32b7e52c5d"/>
+					<textElement>
+						<font size="20"/>
+					</textElement>
+					<textFieldExpression><![CDATA["All " + $V{PHORV} + " You Planted"]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<group name="TTH" keepTogether="true">
+		<groupExpression><![CDATA[$P{ENTERPRISE_ID}]]></groupExpression>
+		<groupHeader>
+			<band height="321" splitType="Prevent">
+				<componentElement>
+					<reportElement key="Top 10 Hybrids" x="72" y="181" width="1059" height="140" uuid="ee99e1f5-fb63-4f3a-94ef-8a62a866cf5c"/>
+					<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" whenNoDataType="AllSectionsNoDetail">
+						<datasetRun subDataset="Top Hybrids" uuid="93e90740-a68a-48c4-93ef-eecb84fbf677">
+							<datasetParameter name="TOP_ENTERPRISE_ID">
+								<datasetParameterExpression><![CDATA[$P{ENTERPRISE_ID}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TOP_ACRES_FILTER">
+								<datasetParameterExpression><![CDATA[$P{ACRES_FILTER}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TOP_CROP_TYPE">
+								<datasetParameterExpression><![CDATA[$P{CROP_TYPE}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TOP_CROP_YEAR">
+								<datasetParameterExpression><![CDATA[$P{CROP_YEAR}]]></datasetParameterExpression>
+							</datasetParameter>
+							<datasetParameter name="TOP_NETWORK">
+								<datasetParameterExpression><![CDATA[$P{NETWORK}]]></datasetParameterExpression>
+							</datasetParameter>
+							<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+						</datasetRun>
+						<jr:columnGroup width="184" uuid="4abfa386-a12a-43ca-b824-5ad074ddae4e">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<bottomPen lineWidth="0.0"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="184" height="35" uuid="d95bfee2-2c71-4c8f-960f-28ecd96120df"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="20" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Rank]]></text>
+								</staticText>
+							</jr:tableHeader>
+							<jr:column width="91" uuid="9faa68ee-9005-40da-b0c4-3ed3fa45a5fe">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="91" height="35" uuid="38f7be00-e28c-4d6b-aa2a-cda29ba842f9"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Network	]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter height="40" rowSpan="1"/>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="91" height="40" uuid="c8dc2a97-6e61-4b4a-8639-b1a6b4ee7475"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font size="16"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{nRank}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+							<jr:column width="93" uuid="d96d2e72-7eb6-46f6-82e4-33d1b904ff19">
+								<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+									<box>
+										<topPen lineWidth="0.0"/>
+									</box>
+									<staticText>
+										<reportElement x="0" y="0" width="93" height="35" uuid="eab54417-9ed2-442c-864e-12191d27c0fc"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+										</textElement>
+										<text><![CDATA[Yours]]></text>
+									</staticText>
+								</jr:columnHeader>
+								<jr:columnFooter height="40" rowSpan="1"/>
+								<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+									<textField isBlankWhenNull="true">
+										<reportElement x="0" y="0" width="93" height="40" uuid="f70538b4-216d-4691-8c72-a61c42da61fb"/>
+										<textElement textAlignment="Center" verticalAlignment="Middle">
+											<font size="16"/>
+										</textElement>
+										<textFieldExpression><![CDATA[$F{yrank}]]></textFieldExpression>
+									</textField>
+								</jr:detailCell>
+							</jr:column>
+						</jr:columnGroup>
+						<jr:column width="195" uuid="8404fda3-0294-4818-92c8-90c728ee8b5a">
+							<jr:tableHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<bottomPen lineWidth="0.0"/>
+								</box>
+							</jr:tableHeader>
+							<jr:columnHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.0"/>
+								</box>
+								<textField>
+									<reportElement x="0" y="0" width="195" height="35" uuid="7ffa8e40-47de-49bc-90dc-a523d2a3f3bd"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<textFieldExpression><![CDATA[($P{TOP_CROP_TYPE} == "Corn") ? "Hybrid" : "Variety"]]></textFieldExpression>
+								</textField>
+							</jr:columnHeader>
+							<jr:columnFooter style="AlternateDualColumns" height="40" rowSpan="1">
+								<staticText>
+									<reportElement x="0" y="0" width="195" height="40" uuid="5675487e-2eaf-4de0-9814-f423b707023c"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Summary	]]></text>
+								</staticText>
+							</jr:columnFooter>
+							<jr:detailCell style="AlternateDualColumns" height="40" rowSpan="1">
+								<textField isStretchWithOverflow="true">
+									<reportElement x="0" y="0" width="195" height="40" uuid="dafe4fba-05da-42e0-8ea3-3169758d7a2c"/>
+									<textElement verticalAlignment="Middle">
+										<font size="16"/>
+										<paragraph leftIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{hybrid}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="145" uuid="e69df066-ffa9-4cac-b243-783a769a99d3">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<bottomPen lineWidth="0.0"/>
+								</box>
+							</jr:tableHeader>
+							<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.0"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="145" height="35" uuid="a9dd9ffa-5d88-40c0-90b2-19cb71f62868"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[A]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+								<textField pattern="#,##0">
+									<reportElement x="0" y="0" width="145" height="40" uuid="c1bb9feb-5966-40e8-b1f2-7ff81d5a5a29"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$V{TotAcres}]]></textFieldExpression>
+								</textField>
+							</jr:columnFooter>
+							<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+								<textField pattern="0">
+									<reportElement x="0" y="0" width="145" height="40" uuid="6211656a-f10f-4970-a502-d81ed4444acd"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{nAcres}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="143" uuid="96ac0a15-2872-4628-abd2-161550266943">
+							<jr:tableHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<bottomPen lineWidth="0.0"/>
+								</box>
+							</jr:tableHeader>
+							<jr:columnHeader style="AlternateDualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.0"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="143" height="35" uuid="fd94c09e-4076-479e-9ed6-c75c1392be16"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[Bu/A]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:columnFooter style="AlternateDualColumns" height="40" rowSpan="1">
+								<textField pattern="0.0">
+									<reportElement x="0" y="0" width="143" height="40" uuid="c99cdb57-678b-4be6-8f27-fa7dc24c2440"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$V{AvgBuA}]]></textFieldExpression>
+								</textField>
+							</jr:columnFooter>
+							<jr:detailCell style="AlternateDualColumns" height="40" rowSpan="1">
+								<textField pattern="0.0">
+									<reportElement x="0" y="0" width="143" height="40" uuid="9bdea021-336d-4168-ae99-25ff76d0f631"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{nYieldAvg}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+						<jr:column width="144" uuid="b0962502-5ea2-46af-85a5-14380d1dfbb9">
+							<jr:tableHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<bottomPen lineWidth="0.0"/>
+								</box>
+							</jr:tableHeader>
+							<jr:columnHeader style="DualColumns" height="35" rowSpan="1">
+								<box>
+									<topPen lineWidth="0.0"/>
+								</box>
+								<staticText>
+									<reportElement x="0" y="0" width="144" height="35" uuid="b5fd2fe2-7b38-4b1d-ae31-650a310e423b"/>
+									<textElement textAlignment="Center" verticalAlignment="Middle">
+										<font size="18" isBold="true" pdfFontName="Helvetica-Bold"/>
+									</textElement>
+									<text><![CDATA[% Moisture]]></text>
+								</staticText>
+							</jr:columnHeader>
+							<jr:columnFooter style="DualColumns" height="40" rowSpan="1">
+								<textField pattern="0.0">
+									<reportElement x="0" y="0" width="144" height="40" uuid="c45d2a6a-5db3-457d-8451-67387999d5f8"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16" isBold="true" pdfFontName="Helvetica-Bold"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$V{AvgMoisPerc}]]></textFieldExpression>
+								</textField>
+							</jr:columnFooter>
+							<jr:detailCell style="DualColumns" height="40" rowSpan="1">
+								<textField pattern="0.0">
+									<reportElement x="0" y="0" width="144" height="40" uuid="edcf25c9-ef9d-4cea-8f0a-567c65b54ae1"/>
+									<textElement textAlignment="Right" verticalAlignment="Middle">
+										<font size="16"/>
+										<paragraph rightIndent="5"/>
+									</textElement>
+									<textFieldExpression><![CDATA[$F{nMoistPerc}]]></textFieldExpression>
+								</textField>
+							</jr:detailCell>
+						</jr:column>
+					</jr:table>
+				</componentElement>
+				<textField evaluationTime="Report">
+					<reportElement x="72" y="73" width="651" height="35" forecolor="#0099FF" uuid="164d8d40-2628-46a4-b3db-8de43c3badea"/>
+					<textElement verticalAlignment="Middle">
+						<font size="24" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{HORV} + " Performance across the Network"]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Report">
+					<reportElement x="72" y="129" width="454" height="30" forecolor="#595959" uuid="b9f30af4-f4e5-4b3f-b4b2-76b5586204f7"/>
+					<textElement>
+						<font size="20"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Top 10 " + $V{PHORV}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="166">
+			<staticText>
+				<reportElement x="72" y="73" width="875" height="93" forecolor="#666666" uuid="5079d04a-913e-4cf6-9b23-e75175129080"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="64" isBold="true"/>
+				</textElement>
+				<text><![CDATA[PERFORMANCE ANALYSIS ]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageFooter>
+		<band height="218">
+			<frame>
+				<reportElement mode="Opaque" x="72" y="77" width="1059" height="73" backcolor="#0F77B1" uuid="496a197d-86ba-443d-83e9-b33b4c91a4a7"/>
+				<textField isBlankWhenNull="true">
+					<reportElement x="638" y="11" width="385" height="50" forecolor="#FFFFFF" uuid="c3ff28b4-f4e9-4db9-900a-2080faff5e88"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="18" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Page " + ($P{PAGE_NUMBER} + $V{PAGE_NUMBER} - 1)]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement mode="Transparent" x="38" y="11" width="385" height="50" forecolor="#FFFFFF" uuid="c7ad0e63-9e33-4bd1-82ef-93fa77ba9793"/>
+					<textElement verticalAlignment="Middle">
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new SimpleDateFormat("MMMMM dd, yyy").format(new Date())]]></textFieldExpression>
+				</textField>
+			</frame>
+			<image>
+				<reportElement x="495" y="88" width="215" height="50" uuid="a986eb30-294e-4077-9768-a9407cb062ea"/>
+				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/ws_logo_white_tm.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement mode="Opaque" x="72" y="37" width="1059" height="40" forecolor="#1F8BB3" uuid="4ab7855a-6892-412c-bea6-8daefe849019"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Confidential and Proprietary]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>

@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Summary_Style_2_Network" language="groovy" pageWidth="1240" pageHeight="1754" whenNoDataType="AllSectionsNoDetail" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="af628980-c2af-43ad-bcb7-413a3d653bc3">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="ENTERPRISE_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:/WingScan/report_templates"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<parameter name="PAGE_NUMBER" class="java.lang.Integer"/>
+	<parameter name="CROP_TYPE" class="java.lang.String">
+		<defaultValueExpression><![CDATA["Corn"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CROP_YEAR" class="java.lang.String">
+		<defaultValueExpression><![CDATA[new SimpleDateFormat("yyyy").format(new Date())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NETWORK" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT Enterprise.EnterpriseName, YourFields.yFields, YourFields.yAcres, NetworkFields.nFields, NetworkFields.nAcres
+FROM
+(
+SELECT COUNT(DISTINCT fields.id) AS yFields, SUM(acres) AS yAcres
+FROM fields
+INNER JOIN field_yield_stats ON fields.id = field_yield_stats.field_id
+INNER JOIN master_hybrid_references on master_hybrid_references.id = field_yield_stats.hybrid_id
+WHERE fields.enterprise_id = $P{ENTERPRISE_ID}
+AND field_yield_stats.year = $P{CROP_YEAR}
+AND master_hybrid_references.crop = $P{CROP_TYPE}
+)YourFields,
+(
+SELECT COUNT(DISTINCT fields.id) AS nFields, SUM(acres) AS nAcres
+FROM fields
+INNER JOIN field_yield_stats ON fields.id = field_yield_stats.field_id
+INNER JOIN master_hybrid_references on master_hybrid_references.id = field_yield_stats.hybrid_id
+WHERE field_yield_stats.year = $P{CROP_YEAR}
+AND master_hybrid_references.crop = $P{CROP_TYPE}
+AND fields.fips_code IN ($P!{NETWORK})
+)NetworkFields,
+(
+SELECT name AS EnterpriseName
+FROM enterprises
+where enterprises.id = $P{ENTERPRISE_ID}
+)Enterprise]]>
+	</queryString>
+	<field name="EnterpriseName" class="java.lang.String"/>
+	<field name="yFields" class="java.lang.Integer"/>
+	<field name="yAcres" class="java.math.BigDecimal"/>
+	<field name="nFields" class="java.lang.Integer"/>
+	<field name="nAcres" class="java.math.BigDecimal"/>
+	<variable name="DATE_NOW" class="java.util.Date">
+		<variableExpression><![CDATA[]]></variableExpression>
+	</variable>
+	<variable name="TOTAL_PAGE" class="java.lang.Integer" resetType="None" incrementType="Page" calculation="Count">
+		<variableExpression><![CDATA[$V{TOTAL_PAGE}]]></variableExpression>
+		<initialValueExpression><![CDATA[1]]></initialValueExpression>
+	</variable>
+	<variable name="PG_NUM" class="java.lang.Integer" incrementType="Page" calculation="Count">
+		<initialValueExpression><![CDATA[1]]></initialValueExpression>
+	</variable>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="226" splitType="Stretch">
+			<staticText>
+				<reportElement x="71" y="72" width="379" height="84" forecolor="#474745" uuid="8c4e2b47-d4f5-4096-bcdc-81fc124ae72c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="64" isBold="true"/>
+				</textElement>
+				<text><![CDATA[SUMMARY]]></text>
+			</staticText>
+		</band>
+	</title>
+	<detail>
+		<band height="1041" splitType="Stretch">
+			<textField pattern="###0.00">
+				<reportElement x="109" y="324" width="1091" height="35" forecolor="#595959" uuid="a35301b7-b3fa-41b2-844d-e13258ee389c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="24" isBold="true" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Your Operation = " + $F{yFields} + " fields [" + Math.round($F{yAcres}*10)/10 + " acres]"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="71" y="268" width="218" height="34" forecolor="#0F76AF" uuid="aee5e196-ea7b-4a6a-9137-0aa00dfb9a8c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="26" isBold="true"/>
+				</textElement>
+				<text><![CDATA[DATA SCOPE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="324" y="133" width="119" height="92" forecolor="#666666" uuid="2a5fcc85-7118-4258-8f83-fc63dc5be10c"/>
+				<textElement>
+					<font fontName="SansSerif" size="24"/>
+				</textElement>
+				<text><![CDATA[ANALYSIS RUN DATE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="71" y="576" width="328" height="34" forecolor="#0F76AF" uuid="e825940c-f925-43c2-948d-bed8295a3f78"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="26" isBold="true"/>
+				</textElement>
+				<text><![CDATA[QUESTIONS/COMMENTS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="109" y="633" width="723" height="33" forecolor="#595959" uuid="deda3644-765d-43ea-9a0e-43557783eb86"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="24"/>
+				</textElement>
+				<text><![CDATA[Please contact us with any questions, comments or concerns:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="144" y="683" width="637" height="40" forecolor="#595959" uuid="7b308c2c-aa10-4e9a-b709-5e95f37f92cc"/>
+				<textElement verticalAlignment="Top">
+					<font fontName="SansSerif" size="24"/>
+				</textElement>
+				<text><![CDATA[support@farmintelligence.com ]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="144" y="722" width="294" height="40" forecolor="#595959" uuid="a2973055-86f8-42b5-b113-9aea78c576ec"/>
+				<textElement>
+					<font size="24"/>
+				</textElement>
+				<text><![CDATA[507-388-7638]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="324" y="1" width="876" height="79" forecolor="#0F76AF" uuid="6c15403c-e908-42d7-873b-f886b64c1914"/>
+				<textElement>
+					<font size="26" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["The following analysis is " +
+(($P{CROP_TYPE} == "Soybeans") ? "SOYBEAN" : "CORN")+
+(($P{CROP_TYPE} == "Corn") ? " HYBRID" : " VARIETY") +
+" " +  $P{REPORT_TITLE}.toUpperCase() + " for the " +
+$P{CROP_YEAR} + " crop year."]]></textFieldExpression>
+			</textField>
+			<frame>
+				<reportElement mode="Opaque" x="71" y="0" width="225" height="225" backcolor="#272726" uuid="feeebd9b-ee89-430d-aac3-2d69853d3879"/>
+				<box>
+					<topPen lineWidth="2.0" lineColor="#27C4FE"/>
+					<leftPen lineWidth="2.0" lineColor="#27C4FE"/>
+					<bottomPen lineWidth="2.0" lineColor="#27C4FE"/>
+					<rightPen lineWidth="2.0" lineColor="#27C4FE"/>
+				</box>
+				<textField evaluationTime="Report" pattern="MMM">
+					<reportElement x="0" y="0" width="225" height="80" forecolor="#FFFFFF" uuid="5f9db0c6-e6f7-476e-852f-590be08086e3"/>
+					<textElement verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="62" isBold="true"/>
+						<paragraph leftIndent="15" rightIndent="15"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Report" pattern="dd">
+					<reportElement x="0" y="80" width="225" height="80" forecolor="#FFFFFF" uuid="6421fdb3-6c16-461e-8d0e-1a209c54b2b7"/>
+					<textElement verticalAlignment="Top">
+						<font fontName="SansSerif" size="62" isBold="true"/>
+						<paragraph leftIndent="15" rightIndent="15"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				</textField>
+				<textField pattern="yyyy">
+					<reportElement x="139" y="160" width="86" height="65" forecolor="#FFFFFF" uuid="03646107-a719-4b19-8301-db41cb12eaff"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="SansSerif" size="24"/>
+						<paragraph rightIndent="15"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				</textField>
+				<textField pattern="h:mm a">
+					<reportElement x="0" y="160" width="139" height="65" forecolor="#FFFFFF" uuid="64b7dbaf-9ac6-4e21-8d5a-62d6ae564baa"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="SansSerif" size="24"/>
+						<paragraph leftIndent="15"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+				</textField>
+			</frame>
+			<staticText>
+				<reportElement x="71" y="824" width="1059" height="28" forecolor="#595959" uuid="d9b3953a-e1cd-4821-8510-43e7798cadf6"/>
+				<textElement textAlignment="Center">
+					<font size="16" isItalic="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Copyright 2013 by Farm Intelligence² ™]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="71" y="852" width="1059" height="28" forecolor="#595959" uuid="9457056a-3290-4490-85b1-08166cc4bd9a"/>
+				<textElement textAlignment="Center">
+					<font size="16" isItalic="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Mankato, Minnesota 56002]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="71" y="880" width="1059" height="28" forecolor="#595959" uuid="cb4760a4-a4d3-4570-8e77-45f2200e4f95"/>
+				<textElement textAlignment="Center">
+					<font size="16" isItalic="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[507-388-7638]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="71" y="908" width="1059" height="28" forecolor="#595959" uuid="0e772d40-5678-4fb4-84fd-6317a86fca2f"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom">
+					<font size="16" isItalic="true" isStrikeThrough="false"/>
+				</textElement>
+				<text><![CDATA[Patents Pending]]></text>
+			</staticText>
+			<image scaleImage="FillFrame">
+				<reportElement x="71" y="967" width="350" height="50" uuid="c36c1c28-9b02-4128-ae44-89fa57c4473e"/>
+				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/Farm_Intelligence_Logo_small.png"]]></imageExpression>
+			</image>
+			<image scaleImage="FillFrame">
+				<reportElement x="780" y="968" width="350" height="50" uuid="d1b9af04-01a0-4faa-8d81-d09621c6d788"/>
+				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/decision_ag_tm_small.png"]]></imageExpression>
+			</image>
+			<subreport>
+				<reportElement x="144" y="439" width="750" height="100" uuid="cfcece0f-ba74-407a-b093-7910d99ea5e5"/>
+				<subreportParameter name="CROP_TYPE">
+					<subreportParameterExpression><![CDATA[$P{CROP_TYPE}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="CROP_YEAR">
+					<subreportParameterExpression><![CDATA[$P{CROP_YEAR}]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="NETWORK">
+					<subreportParameterExpression><![CDATA[$P{NETWORK}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_DIR} + "/Summary_Style_2_Counties.jasper"]]></subreportExpression>
+			</subreport>
+			<textField>
+				<reportElement x="109" y="382" width="1091" height="35" forecolor="#595959" uuid="ce6f0211-889a-41ab-8794-8e8b0b077d3a"/>
+				<textElement verticalAlignment="Middle">
+					<font size="24" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Defined Area = " + $F{nFields} + " fields [" + Math.round($F{nAcres}*10)/10 + " acres]"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="217">
+			<frame>
+				<reportElement mode="Opaque" x="71" y="73" width="1059" height="73" backcolor="#0F77B1" uuid="69b77d40-607f-42ed-bc9c-6bfa095858cb"/>
+				<textField isBlankWhenNull="true">
+					<reportElement x="638" y="11" width="385" height="50" forecolor="#FFFFFF" uuid="9e5b7cad-a2d5-4675-b98b-a6f9937de43c"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="18" isBold="false"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Page " + ($P{PAGE_NUMBER} + $V{PAGE_NUMBER} - 1)]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement mode="Transparent" x="38" y="11" width="385" height="50" forecolor="#FFFFFF" uuid="bb4ed4e1-2972-4928-b7bb-66b01a4f2385"/>
+					<textElement verticalAlignment="Middle">
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[new SimpleDateFormat("MMMMM dd, yyy").format(new Date())]]></textFieldExpression>
+				</textField>
+			</frame>
+			<image>
+				<reportElement x="494" y="84" width="215" height="50" uuid="1a8816fe-7aa2-43f0-a01a-fff84c90045d"/>
+				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/ws_logo_white_tm.png"]]></imageExpression>
+			</image>
+			<staticText>
+				<reportElement mode="Opaque" x="71" y="33" width="1059" height="40" forecolor="#1F8BB3" uuid="ca7812cd-3283-4aff-86aa-29d4aba3fbda"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="18" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Confidential and Proprietary]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>

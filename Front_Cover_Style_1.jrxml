@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Front_Cover_Style_1" language="groovy" pageWidth="1240" pageHeight="1754" whenNoDataType="AllSectionsNoDetail" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="8236e9f6-4129-45a0-aa34-b64dcc513892">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="528"/>
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<parameter name="ENTERPRISE_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="YOUR_TITLE" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:/WingScan/report_templates"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CROP_TYPE" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT name
+FROM enterprises
+WHERE enterprises.id = $P{ENTERPRISE_ID}]]>
+	</queryString>
+	<field name="name" class="java.lang.String"/>
+	<group name="Title">
+		<groupHeader>
+			<band height="1714">
+				<frame>
+					<reportElement mode="Opaque" x="72" y="476" width="600" height="600" backcolor="#0099FF" uuid="058ec6b5-0400-4561-9f29-8c4149c45d25"/>
+					<textField>
+						<reportElement x="50" y="46" width="485" height="307" forecolor="#FFFFFF" uuid="3d544b95-9d1f-4bd4-95f2-dcf56998c4d6"/>
+						<textElement>
+							<font fontName="SansSerif" size="60" isBold="true"/>
+						</textElement>
+						<textFieldExpression><![CDATA[(($P{CROP_TYPE} == "Corn") ? "HYBRID " : "VARIETY ")
++ $P{REPORT_TITLE}.toUpperCase() + " ANALYSIS"]]></textFieldExpression>
+					</textField>
+					<textField>
+						<reportElement x="50" y="455" width="485" height="43" forecolor="#FFFFFF" uuid="ff0d14fd-6f65-4247-a8bf-0d7bd9e75659"/>
+						<textElement verticalAlignment="Bottom">
+							<font size="32" isBold="true"/>
+						</textElement>
+						<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
+					</textField>
+					<textField pattern="MMMMM dd, yyyy">
+						<reportElement x="50" y="498" width="485" height="47" forecolor="#FFFFFF" uuid="46944cea-f8d6-4725-b817-f7346904c536"/>
+						<textElement verticalAlignment="Middle">
+							<font size="32" isBold="true"/>
+						</textElement>
+						<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+					</textField>
+					<textField>
+						<reportElement x="50" y="353" width="485" height="102" forecolor="#FFFFFF" uuid="83de35e3-f5a3-46b1-97f5-7f1f70a493a6"/>
+						<textElement verticalAlignment="Top">
+							<font size="16"/>
+						</textElement>
+						<textFieldExpression><![CDATA["[ " + $P{YOUR_TITLE} + " ]"]]></textFieldExpression>
+					</textField>
+				</frame>
+				<image>
+					<reportElement x="674" y="1076" width="455" height="455" uuid="45e66dd4-38f7-40ce-85f3-9c6ad333b0c1"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/farm_logo.jpg"]]></imageExpression>
+				</image>
+				<staticText>
+					<reportElement x="72" y="1548" width="333" height="62" forecolor="#666666" uuid="862568be-de13-476f-af9a-10a8e411dfa4"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font fontName="SansSerif" size="36" isBold="true"/>
+					</textElement>
+					<text><![CDATA[CONFIDENTIAL]]></text>
+				</staticText>
+				<image scaleImage="FillFrame">
+					<reportElement mode="Transparent" x="674" y="74" width="455" height="94" backcolor="#666666" uuid="d8475bd4-32b6-46c2-bc26-ca148a308e76"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/ws_logo_positive_tm.png"]]></imageExpression>
+				</image>
+			</band>
+		</groupHeader>
+	</group>
+</jasperReport>

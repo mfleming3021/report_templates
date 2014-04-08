@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Front_Cover_Style_2" language="groovy" pageWidth="1240" pageHeight="1754" whenNoDataType="AllSectionsNoDetail" columnWidth="1200" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="8236e9f6-4129-45a0-aa34-b64dcc513892">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="234"/>
+	<property name="ireport.y" value="103"/>
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<parameter name="ENTERPRISE_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="YOUR_TITLE" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:/Wingscan/report_templates"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="CROP_TYPE" class="java.lang.String"/>
+	<parameter name="CROP_YEAR" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT name.name, YourFields.yFields, YourFields.yAcres
+FROM
+(
+SELECT COUNT(DISTINCT fields.id) AS yFields, SUM(acres) AS yAcres
+FROM fields
+INNER JOIN field_yield_stats ON fields.id = field_yield_stats.field_id
+INNER JOIN master_hybrid_references on master_hybrid_references.id = field_yield_stats.hybrid_id
+WHERE fields.enterprise_id = $P{ENTERPRISE_ID}
+AND field_yield_stats.year = $P{CROP_YEAR}
+AND master_hybrid_references.crop = $P{CROP_TYPE}
+)YourFields,
+(
+SELECT name
+FROM enterprises
+WHERE enterprises.id = $P{ENTERPRISE_ID}
+)name]]>
+	</queryString>
+	<field name="name" class="java.lang.String"/>
+	<field name="yFields" class="java.lang.Integer"/>
+	<field name="yAcres" class="java.math.BigDecimal"/>
+	<group name="Title">
+		<groupHeader>
+			<band height="1714">
+				<frame>
+					<reportElement mode="Opaque" x="72" y="476" width="600" height="600" backcolor="#0F76AF" uuid="058ec6b5-0400-4561-9f29-8c4149c45d25"/>
+					<textField>
+						<reportElement x="50" y="455" width="485" height="43" forecolor="#FFFFFF" uuid="ff0d14fd-6f65-4247-a8bf-0d7bd9e75659"/>
+						<textElement verticalAlignment="Bottom">
+							<font size="32" isBold="true"/>
+						</textElement>
+						<textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
+					</textField>
+					<textField pattern="MMMMM dd, yyyy">
+						<reportElement x="50" y="498" width="485" height="47" forecolor="#FFFFFF" uuid="46944cea-f8d6-4725-b817-f7346904c536"/>
+						<textElement verticalAlignment="Middle">
+							<font size="32" isBold="true"/>
+						</textElement>
+						<textFieldExpression><![CDATA[new Date()]]></textFieldExpression>
+					</textField>
+					<textField>
+						<reportElement x="50" y="353" width="485" height="102" forecolor="#CBEAF6" uuid="83de35e3-f5a3-46b1-97f5-7f1f70a493a6"/>
+						<textElement verticalAlignment="Top">
+							<font size="18"/>
+						</textElement>
+						<textFieldExpression><![CDATA["[ " + $P{YOUR_TITLE} + " ]"]]></textFieldExpression>
+					</textField>
+				</frame>
+				<staticText>
+					<reportElement mode="Opaque" x="122" y="1488" width="485" height="25" forecolor="#1F8BB3" uuid="862568be-de13-476f-af9a-10a8e411dfa4"/>
+					<textElement verticalAlignment="Bottom">
+						<font fontName="SansSerif" size="18" isBold="true"/>
+					</textElement>
+					<text><![CDATA[Confidential and Proprietary]]></text>
+				</staticText>
+				<image scaleImage="FillFrame">
+					<reportElement mode="Transparent" x="674" y="74" width="455" height="94" backcolor="#666666" uuid="d8475bd4-32b6-46c2-bc26-ca148a308e76"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/ws_logo_positive_tm.png"]]></imageExpression>
+				</image>
+				<textField>
+					<reportElement x="774" y="224" width="355" height="28" uuid="16973954-2a29-47b5-ad8a-1252cb5224e1"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{CROP_TYPE}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement x="720" y="224" width="54" height="28" forecolor="#1F8BB3" uuid="94816965-5d7a-4698-a13c-21486fa31918"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<text><![CDATA[Crop: ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="720" y="254" width="54" height="28" forecolor="#1F8BB3" uuid="9aa59f7e-507f-4992-9ea2-50b73e72d768"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<text><![CDATA[Year: ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="720" y="282" width="72" height="28" forecolor="#1F8BB3" uuid="b1c9acee-eb5c-4a9c-abfa-901c4adcf92b"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<text><![CDATA[Scope: ]]></text>
+				</staticText>
+				<staticText>
+					<reportElement x="720" y="368" width="79" height="28" forecolor="#1F8BB3" uuid="5e252956-7503-4955-9eec-8e909f6c3dcb"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<text><![CDATA[Analysis: ]]></text>
+				</staticText>
+				<textField>
+					<reportElement x="774" y="254" width="355" height="28" uuid="cfc53aff-5116-45eb-afab-81e11f3674e4"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$P{CROP_YEAR}]]></textFieldExpression>
+				</textField>
+				<ellipse>
+					<reportElement x="738" y="322" width="6" height="6" backcolor="#000000" uuid="e7cea3cd-9152-45d9-99b5-69c83b3b4ea0"/>
+				</ellipse>
+				<staticText>
+					<reportElement x="756" y="309" width="100" height="28" uuid="ce931d83-5c0a-4018-a7b7-cc3100bf5a80"/>
+					<textElement verticalAlignment="Middle">
+						<font size="18"/>
+					</textElement>
+					<text><![CDATA[All Fields]]></text>
+				</staticText>
+				<ellipse>
+					<reportElement x="738" y="351" width="6" height="6" backcolor="#000000" uuid="b7dbca48-61ad-42be-8d5e-baaa080200f7"/>
+				</ellipse>
+				<ellipse>
+					<reportElement x="738" y="409" width="6" height="6" backcolor="#000000" uuid="12a7ed47-2be1-4ed9-b1f4-d4792fa76782"/>
+				</ellipse>
+				<textField>
+					<reportElement x="756" y="339" width="355" height="28" uuid="d9676c08-a681-46e1-ac17-8898c8a101c7"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[Math.round($F{yAcres}*1)/1 + " Acres"]]></textFieldExpression>
+				</textField>
+				<textField>
+					<reportElement x="756" y="397" width="355" height="28" uuid="8cdf52ad-4be8-4224-b0e0-9a96b8749e58"/>
+					<textElement>
+						<font size="18"/>
+					</textElement>
+					<textFieldExpression><![CDATA[(($P{CROP_TYPE} == "Corn") ? "Hybrid " : "Variety")
++ $P{REPORT_TITLE}]]></textFieldExpression>
+				</textField>
+				<image scaleImage="FillFrame">
+					<reportElement positionType="Float" x="672" y="1096" width="227" height="200" uuid="5b33ed76-4e0a-4878-9819-ee789922a418"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/preserving_yield.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame">
+					<reportElement positionType="Float" stretchType="RelativeToTallestObject" x="899" y="1311" width="200" height="200" uuid="83f2a57b-7626-484e-921e-5e6037363eec"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/portable.png"]]></imageExpression>
+				</image>
+				<image scaleImage="FillFrame">
+					<reportElement x="899" y="876" width="200" height="200" uuid="adfb89b4-0e11-4e0c-8b2b-4f56ca3828db"/>
+					<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "/Imagery/charts.png"]]></imageExpression>
+				</image>
+			</band>
+		</groupHeader>
+	</group>
+</jasperReport>
